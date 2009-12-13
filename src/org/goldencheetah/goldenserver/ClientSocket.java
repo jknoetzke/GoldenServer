@@ -45,8 +45,7 @@ public class ClientSocket extends Thread
 				handlers.addElement(this);
 			}
 			notifyRiderChange(true);
-			
-			
+
 			while(true)
 			{
 				strIn = in.readLine();
@@ -95,18 +94,34 @@ public class ClientSocket extends Thread
 		if(newRider)
 			uuid = UUID.randomUUID().toString();
 		synchronized(handlers) 
-		{
+		{	
 			for(int i = 0; i < handlers.size(); i++) 
 			{	
 				ClientSocket handler = (ClientSocket)handlers.elementAt(i);
 				if(newRider)
-					handler.out.println("<newracerid='" + this.uuid +"'" + "/>\r");
+					handler.out.println("<newracerid='" + getClientList() +"'" + "/>\r");
 				else
 					handler.out.println("<racerdropped='" + this.uuid +"'" + "/>\r");
 					  
 				handler.out.flush();
 			}
 		}
+	}
+	
+	public String getID() { return uuid; }
+	
+	
+	private String getClientList()
+	{
+		StringBuffer clientList = new StringBuffer();
+		for(int x=0; x< handlers.size(); x++)
+		{
+			clientList.append(handlers.get(x).getID());
+		    if(x < (handlers.size() -1))
+		    	clientList.append(",");
+		}
+		
+		return clientList.toString();
 	}
 
 }

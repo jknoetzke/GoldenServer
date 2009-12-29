@@ -19,22 +19,24 @@
 
 package org.goldencheetah.goldenserver;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class GoldenServer extends Thread {
+import org.apache.log4j.Logger;
 
+public class GoldenServer extends Thread 
+{
+	static Logger logger = Logger.getLogger(GoldenServer.class.getName());
+	
 	private ServerSocket server;
 
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {
-		new GoldenServer();
+	public static void main(String[] args) 
+	{
+		   new GoldenServer();
 
 	}
 
@@ -56,16 +58,14 @@ public class GoldenServer extends Thread {
 		while (true) 
 		{
 			try {
-				System.out.println("Waiting for a connection..");
+				logger.debug("Waiting for a connection..");
 				clientSocket = server.accept();
-				System.out.println("Got a connection!..");
-				ClientSocket client = new ClientSocket(clientSocket);
-				client.start();
+				logger.debug("Got a connection!..");
+				RaceDispatcher raceDispatch = new RaceDispatcher(clientSocket);
+				raceDispatch.start();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			    logger.error(e);
 			}
 		}
 	}
-
 }

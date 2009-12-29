@@ -26,32 +26,57 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 import java.util.Vector;
 
-public class ClientSocket extends Thread 
-{
-	  static Vector<ClientSocket> handlers = new Vector<ClientSocket>();
-	  private BufferedReader in;
-	  private PrintWriter out;
-	  private String uuid;
-	
-	private Socket clientSock;
+import org.apache.log4j.Logger;
 
-	public ClientSocket(Socket _clientSock)
+public class Race extends Thread 
+{
+	static Logger logger = Logger.getLogger(Race.class.getName());
+	static Vector<Race> handlers = new Vector<Race>();
+	private List<Rider> riders;
+	private List<Integer> placings; 
+	private String raceID;
+	private String raceName;
+	private Date duration;
+	private BufferedReader in;
+	private PrintWriter out;
+	private Socket clientSock;
+	  	
+
+	public Race(Socket _sock)
 	{
 	
-		System.out.println("Firing up the Client Sock..");
-		clientSock = _clientSock;
+		logger.debug("Firing up the Client Sock..");
+		clientSock = _sock;
 		try {
 			in = new BufferedReader(new InputStreamReader(clientSock.getInputStream()));
 			out = new PrintWriter(new OutputStreamWriter(clientSock.getOutputStream()));
+			
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			logger.error(e);
 		}
 
+	}
+	
+	
+	public Race()
+	{
+		
+	}
+	
+	public void addRacer(Rider _rider)
+	{
+		synchronized(handlers)
+		{
+			riders.add(_rider);
+			//Notify Everyone we have a new racer in town
+			GoldenServerMessage.newRacer(handlers);
 		}
+	}
 	
 	
 	@Override
@@ -63,9 +88,9 @@ public class ClientSocket extends Thread
 			synchronized(handlers)
 			{
 				handlers.addElement(this);
+				GoldenServerMessage.newRacer(handlers);
 			}
-			notifyRiderChange(true);
-
+			
 			while(true)
 			{
 				strIn = in.readLine();
@@ -75,7 +100,7 @@ public class ClientSocket extends Thread
 				{	
 					synchronized(handlers) 
 					{
-						ClientSocket handler = (ClientSocket)handlers.elementAt(i);
+						Race handler = (Race)handlers.elementAt(i);
 						handler.out.println(strIn + "\r");
 						handler.out.flush();
 					}
@@ -95,7 +120,7 @@ public class ClientSocket extends Thread
 		} 
 	        catch(IOException ioe) 
 			{
-	        	System.out.println(ioe);
+	        	logger.error(ioe);
 			    
 			}     
 	        finally 
@@ -103,46 +128,66 @@ public class ClientSocket extends Thread
 			    	synchronized(handlers) 
 			    	{
 			    		handlers.removeElement(this);
-			    		notifyRiderChange(false);
+			    		//GoldenServerMessage.dropRider();
 			    	}
 			    }
 			}
 	}
-	
-	private void notifyRiderChange(boolean newRider)
-	{
-		if(newRider)
-			uuid = UUID.randomUUID().toString();
-		synchronized(handlers) 
-		{	
-			for(int i = 0; i < handlers.size(); i++) 
-			{	
-				ClientSocket handler = (ClientSocket)handlers.elementAt(i);
-				if(newRider)
-					handler.out.println("<newracerid='" + getClientList() +"'" + "/>\r");
-				else
-					handler.out.println("<racerdropped='" + this.uuid +"'" + "/>\r");
-					  
-				handler.out.flush();
-			}
-		}
-	}
-	
-	public String getID() { return uuid; }
-	
-	
-	private String getClientList()
-	{
-		StringBuffer clientList = new StringBuffer();
-		for(int x=0; x< handlers.size(); x++)
-		{
-			clientList.append(handlers.get(x).getID());
-		    if(x < (handlers.size() -1))
-		    	clientList.append(",");
-		}
-		
-		return clientList.toString();
+
+
+	public List<Rider> getRiders() {
+		return riders;
 	}
 
+
+	public void setRiders(List<Rider> riders) {
+		this.riders = riders;
+	}
+
+
+	public List<Integer> getPlacings() {
+		return placings;
+	}
+
+
+	public void setPlacings(List<Integer> placings) {
+		this.placings = placings;
+	}
+
+
+
+	public String getRaceID() {
+		return raceID;
+	}
+
+	public void setRaceID(String raceID) {
+		this.raceID = raceID;
+	}
+
+	public String getRaceName() {
+		return raceName;
+	}
+
+	public void setRaceName(String raceName) {
+		this.raceName = raceName;
+	}
+
+	public Date getDuration() {
+		return duration;
+	}
+
+
+	public void setDuration(Date duration) {
+		this.duration = duration;
+	}
+
+	public boolean exists(String _raceID)
+	{
+		if(_raceID.equals(this.getRaceID()))
+			return true;
+		else
+			return false;
+	}
+   
 }
 

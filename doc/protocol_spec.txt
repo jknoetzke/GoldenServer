@@ -1,0 +1,212 @@
+GoldenServer protocol specification
+Current protocol version:  0.1
+
+Contributors
+
+   Steve Gribble     [gribble {at} cs.washington.edu]
+   Mark Liversedge   [liversedge {at} gmail.com]
+   Justin Knotzke    [jknotzke {at} shampoo.ca]
+
+
+Abstract
+========
+
+  GoldenCheetah is adding the capability to do real-time virtual
+  racing over the Internet.  To support this effort, this document
+  describes two different protocols.  The first exists between a
+  GoldenCheetah client and the GoldenServer server, and is called the
+  "GC/GS" protocol.  The second exists between a GoldenWeb web server
+  and the GoldenServer server, and is called the "GW/GS" protocol.
+
+  Using the GC/GS protocol, a GoldenCheetah client sends real-time
+  telemetry information to the server, and receives back telemetry and
+  position information for all clients in the race.  Using the GW/GS
+  protocol, the GoldenServer can poll the GoldenWeb web server to
+  learn about new races that have been created that it should know
+  about, and it can inform the web server about the status and
+  outcome of races.
+
+GW/GS protocol
+==============
+
+  [To be filled in by Justin/Steve as the protocol gets developed]
+
+  - protocol is simple REST-based HTTP over which XML documents
+    are delivered
+
+  - for now, let's assume there are just two commands:  one to
+    GET a list of races that exist [including any specification
+    of race-specific details], and one by which GS can POST back
+    the outcome of a completed race
+
+  - for now, the primary thing that GS learns from GW is a list of
+    raceIDs.  A raceID is a 128 bit unsigned integer, randomly
+    generated to be unguessable, and expressed in hex.  For example:
+
+        18D1A1BCD104EE116A772310BBC61211
+
+
+GC/GS protocol
+==============
+
+  Overview
+  --------
+
+    Let's assume the GoldenServer has polled the GoldenWeb server and
+    learned the ID of a new race.  At this moment, the race is
+    pending, waiting for the first client to connect.  The race begins
+    when the first client connects, and finishes when any client
+    crosses the finish line or all clients have disconnected.  During
+    the race, additional clients can connect, but they start at
+    distance "0".
+  
+    While the race is ongoing, each client periodically sends GS
+    updated telemetry information.  As well, GS periodically
+    calculates new telemetry and position information for all clients,
+    and broadcasts this to all clients.  Each client uses this
+    broadcast to update its GUI.
+
+    The GS/GC protocol is message based; the client and server send
+    each other messages over a single TCP connection.  Each message
+    consists of a single line of ASCII text terminated by a newline
+    character (i.e., '\n').
+
+
+  Initial Client Connection and Handshake
+  ---------------------------------------
+
+    A GC client connects to GS by opening up a TCP connection to
+    port 9133 on the GS host.  Upon successful TCP establishment,
+    the client initiates a handshake with the server.
+
+    C->S:
+
+      hello <protocol version> raceid='<raceID>' ridername='<ridername>' ftp='<watts>' weight='<kg>'\n
+
+      where:
+
+        <protocol version> is the current protocol version, e.g., 0.1
+
+        <raceID> is the 128bit, hex raceID (see above)
+
+        <ridername> is a nickname for the racer, containing only
+        alphabetic characters and the space character, e.g., Steve G
+
+        <watts> is the functional threshold power of the client, in
+        watts
+ 
+        <kg> is the weight of the client, in kilograms
+
+      so, putting it all together, an example is:
+
+      hello 0.1 raceid='18D1A1BCD104EE116A772310BBC61211' ridername='Steve G' ftp='215' weight='74.8'\n
+
+
+    Upon receiving the handshake initiation, the server checks to make
+    sure that the raceID exists and has not finished.  If the race
+    does not exist (or has closed), the server sends back the
+    following and closes the TCP connection:
+
+    S->C:
+
+      hello <protocol version> nosuchrace raceid='<raceID>'\n
+
+
+    On the other hand, if the race does exist and is open, then the
+    server acknowledges the client, informs the client of its riderID,
+    and of the distance of the race (in kilometers).  A riderID is a
+    64bit randomly generated hex unsigned integer, unique to that
+    rider within this race.
+
+    S->C:
+
+      hello <protocol version> raceid='<raceID>' riderid='<riderID>' racedistance='<km>'\n
+
+
+  Membership changes
+  ------------------
+
+    The race membership changes when a new client connects or an
+    existing client disconnects.  When a membership change happens,
+    the server sends each connected client (including any newly
+    connected clients) a full client list:
+
+    S->C:
+      clientlist raceid='<raceid>' numclients='<numclients>'\n
+      ridername='<ridername>' riderid='<riderID>' ftp='<ftp>' weight='<kg>'\n
+      ridername='<ridername>' riderid='<riderID>' ftp='<ftp>' weight='<kg>'\n
+      ...
+
+      where:
+
+          <numclients> is the number of connected clients, including
+          the newly connected client,
+
+          and there is one "ridername='<ridername>' .... \n" line per
+          rider, including any newly connected clients, sorted in no
+          particular order.
+
+
+  Telemetry updates
+  -----------------
+
+    From time to time, a connected client will send telemetry data to
+    the server.  How frequently this happens is up to the client, but
+    a client should update the server at least once per second.  [If
+    a client fails to do so, the server might take "punitive" action,
+    such as assuming that the client is not making forward progress.]
+
+    C->S:
+      telemetry raceid='<raceid>' riderid='<riderid>' power='<watts>' cadence='<rpm>'\n
+
+    From time to time, the server will inform each client of the
+    current race standings.
+
+    S->C:
+      standings raceid='<raceid>' numclients='<numclients>'\n
+      riderid='<riderID>' power='<watts>' cadence='<rpm>' distance='<km>' place='<placing>'\n
+      riderid='<riderID>' power='<watts>' cadence='<rpm>' distance='<km>' place='<placing>'\n
+      ...
+
+      where:
+
+         <placing> is the current place of the client in the standings
+         (e.g., 1 for first place, 2 for second place, and so on)
+
+         and there is one "riderid='<raceid>' .... \n" line for each
+         client, sorted in no particular order.
+
+
+   Race completion
+   ---------------
+
+     A race finishes when a client crosses the finish line.  When
+     the winner crosses the finish line, GS will send each client
+     a message informing it of the race outcome.  A client acks
+     this outcome message, at which point the server (or the client)
+     can drop that client TCP connection.
+
+     S->C:
+       raceconcluded raceid='<raceid>' numclients='<numclients>'\n
+       racerid='<riderID>' distance='<km>' place='<placing>'\n
+       racerid='<riderID>' distance='<km>' place='<placing>'\n
+       ...
+
+     C->S:
+       goodbye raceid='<raceid>' riderid='<riderID>'\n
+
+
+
+Revision history
+================
+
+  Dec 29, 2009.  Protocol pecification document created, protocol
+  version number 0.1 defined.   [Steve Gribble]
+
+
+
+
+
+
+
+

@@ -12,11 +12,11 @@ Abstract
 ========
 
   GoldenCheetah is adding the capability to do real-time virtual
-  racing over the Internet.  To support this effort, this document
-  describes two different protocols.  The first exists between a
-  GoldenCheetah client and the GoldenServer server, and is called the
-  "GC/GS" protocol.  The second exists between a GoldenWeb web server
-  and the GoldenServer server, and is called the "GW/GS" protocol.
+  racing over the Internet.  This document describes two different
+  protocols.  The first exists between a GoldenCheetah client and the
+  GoldenServer server, and is called the "GC/GS" protocol.  The second
+  exists between a GoldenWeb web server and the GoldenServer server,
+  and is called the "GW/GS" protocol.
 
   Using the GC/GS protocol, a GoldenCheetah client sends real-time
   telemetry information to the server, and receives back telemetry and
@@ -109,7 +109,7 @@ GC/GS protocol
 
     S->C:
 
-      hello <protocol version> nosuchrace raceid='<raceID>'\n
+      hellofail <protocol version> nosuchrace raceid='<raceID>'\n
 
 
     On the other hand, if the race does exist and is open, then the
@@ -120,7 +120,7 @@ GC/GS protocol
 
     S->C:
 
-      hello <protocol version> raceid='<raceID>' riderid='<riderID>' racedistance='<km>'\n
+      hellosucceed <protocol version> raceid='<raceID>' riderid='<riderID>' racedistance='<km>'\n
 
 
   Membership changes
@@ -133,8 +133,8 @@ GC/GS protocol
 
     S->C:
       clientlist raceid='<raceid>' numclients='<numclients>'\n
-      ridername='<ridername>' riderid='<riderID>' ftp='<ftp>' weight='<kg>'\n
-      ridername='<ridername>' riderid='<riderID>' ftp='<ftp>' weight='<kg>'\n
+      client ridername='<ridername>' riderid='<riderID>' ftp='<ftp>' weight='<kg>'\n
+      client ridername='<ridername>' riderid='<riderID>' ftp='<ftp>' weight='<kg>'\n
       ...
 
       where:
@@ -142,7 +142,7 @@ GC/GS protocol
           <numclients> is the number of connected clients, including
           the newly connected client,
 
-          and there is one "ridername='<ridername>' .... \n" line per
+          and there is one "client ridername='<ridername>' .... \n" line per
           rider, including any newly connected clients, sorted in no
           particular order.
 
@@ -164,8 +164,8 @@ GC/GS protocol
 
     S->C:
       standings raceid='<raceid>' numclients='<numclients>'\n
-      riderid='<riderID>' power='<watts>' cadence='<rpm>' distance='<km>' place='<placing>'\n
-      riderid='<riderID>' power='<watts>' cadence='<rpm>' distance='<km>' place='<placing>'\n
+      racer riderid='<riderID>' power='<watts>' cadence='<rpm>' distance='<km>' place='<placing>'\n
+      racer riderid='<riderID>' power='<watts>' cadence='<rpm>' distance='<km>' place='<placing>'\n
       ...
 
       where:
@@ -173,8 +173,8 @@ GC/GS protocol
          <placing> is the current place of the client in the standings
          (e.g., 1 for first place, 2 for second place, and so on)
 
-         and there is one "riderid='<raceid>' .... \n" line for each
-         client, sorted in no particular order.
+         and there is one "racer riderid='<raceid>' .... \n" line for
+         each client, sorted in no particular order.
 
 
    Race completion
@@ -188,8 +188,8 @@ GC/GS protocol
 
      S->C:
        raceconcluded raceid='<raceid>' numclients='<numclients>'\n
-       racerid='<riderID>' distance='<km>' place='<placing>'\n
-       racerid='<riderID>' distance='<km>' place='<placing>'\n
+       result racerid='<riderID>' distance='<km>' place='<placing>'\n
+       result racerid='<riderID>' distance='<km>' place='<placing>'\n
        ...
 
      C->S:

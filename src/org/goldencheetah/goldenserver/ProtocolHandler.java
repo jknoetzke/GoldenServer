@@ -214,7 +214,6 @@ public class ProtocolHandler {
             this.raceid = raceid.toLowerCase();
             this.riderid = riderid.toLowerCase();
             this.racedistance_km = racedistance_km;
-
         }
 
         public String toString() {
@@ -766,7 +765,7 @@ public class ProtocolHandler {
         os = resm.toString();
         System.out.print(os);
 
-        // test Goodbyte
+        // test Goodbye
         pm = ProtocolHandler.parseLine(
            "goodbye raceid='18d1a1bcd104ee116a772310bbc61211' riderid='123212321232123a'\n"
                                        );

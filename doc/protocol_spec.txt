@@ -189,8 +189,8 @@ GC/GS protocol
 
      S->C:
        raceconcluded raceid='<raceid>' numclients='<numclients>'\n
-       result racerid='<riderID>' distance='<km>' place='<placing>'\n
-       result racerid='<riderID>' distance='<km>' place='<placing>'\n
+       result riderid='<riderID>' distance='<km>' place='<placing>'\n
+       result riderid='<riderID>' distance='<km>' place='<placing>'\n
        ...
 
      C->S:

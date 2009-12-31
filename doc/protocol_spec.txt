@@ -41,9 +41,10 @@ GW/GS protocol
 
   - for now, the primary thing that GS learns from GW is a list of
     raceIDs.  A raceID is a 128 bit unsigned integer, randomly
-    generated to be unguessable, and expressed in hex.  For example:
+    generated to be unguessable, and expressed in hex with lower
+    case letters used for hex digits a-f.  For example:
 
-        18D1A1BCD104EE116A772310BBC61211
+        18d1a1bcd104ee116a772310bbc61211
 
 
 GC/GS protocol
@@ -99,7 +100,7 @@ GC/GS protocol
 
       so, putting it all together, an example is:
 
-      hello 0.1 raceid='18D1A1BCD104EE116A772310BBC61211' ridername='Steve G' ftp='215' weight='74.8'\n
+      hello 0.1 raceid='18d1a1bcd104ee116a772310bbc61211' ridername='Steve G' ftp='215' weight='74.8'\n
 
 
     Upon receiving the handshake initiation, the server checks to make

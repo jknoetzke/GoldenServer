@@ -158,15 +158,15 @@ GC/GS protocol
     such as assuming that the client is not making forward progress.]
 
     C->S:
-      telemetry raceid='<raceid>' riderid='<riderid>' power='<watts>' cadence='<rpm>'\n
+      telemetry raceid='<raceid>' riderid='<riderid>' power='<watts>' cadence='<rpm>' heartrate='<bpm>' speed='<kph>'\n
 
     From time to time, the server will inform each client of the
     current race standings.
 
     S->C:
       standings raceid='<raceid>' numclients='<numclients>'\n
-      racer riderid='<riderID>' power='<watts>' cadence='<rpm>' distance='<km>' place='<placing>'\n
-      racer riderid='<riderID>' power='<watts>' cadence='<rpm>' distance='<km>' place='<placing>'\n
+      racer riderid='<riderID>' power='<watts>' cadence='<rpm>' distance='<km>' heartrate='<bpm>' speed='<kph>' place='<placing>'\n
+      racer riderid='<riderID>' power='<watts>' cadence='<rpm>' distance='<km>' heartrate='<bpm>' speed='<kph>' place='<placing>'\n
       ...
 
       where:
@@ -197,17 +197,8 @@ GC/GS protocol
        goodbye raceid='<raceid>' riderid='<riderID>'\n
 
 
-
 Revision history
 ================
 
   Dec 29, 2009.  Protocol pecification document created, protocol
   version number 0.1 defined.   [Steve Gribble]
-
-
-
-
-
-
-
-

@@ -48,6 +48,10 @@ public class ProtocolHandler {
      * Returns "null" if the line could not be parsed correctly.
      */
     public static ProtocolMessage parseLine(String line) {
+        // sanity check argument
+        if (line == null)
+            return null;
+
         // depending on what the first word in the message is, invoke
         // the rest of the parsing in the appropriate ProtocolMessage
         // subclass's constructor.

@@ -1,19 +1,20 @@
 /* 
- * Copyright (c) 2010 Steve Gribble    [ gribble {at} cs.washington.edu ]
+ * Copyright (c) 2010 Steve Gribble [ gribble {at} cs.washington.edu ]
  *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the Free
- * Software Foundation; either version 2 of the License, or (at your option)
- * any later version.
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of the
+ * License, or (at your option) any later version.
  * 
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  * 
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc., 51
- * Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+ * 02110-1301 USA.
  */
 
 package org.goldencheetah.goldenserver;
@@ -34,6 +35,7 @@ import org.apache.log4j.Logger;
  */
 public class WebPoller extends Thread {
     private static final int MAX_FAILURES = 360; // 1 hr's worth
+    private static final int POLL_INTERVAL_MS = 10000;
     private static Logger    logger =
         Logger.getLogger(WebPoller.class.getName());
 
@@ -96,7 +98,7 @@ public class WebPoller extends Thread {
             // wait for 10 seconds, or until woken by poll_now().
             try {
                 synchronized(url_to_poll) {
-                    url_to_poll.wait(10000);
+                    url_to_poll.wait(POLL_INTERVAL_MS);
                 }
             } catch (java.lang.InterruptedException ie) {
                 // ignore
@@ -131,14 +133,17 @@ public class WebPoller extends Thread {
         try {
             URL fetchURL = new URL(url_to_poll);
             BufferedReader in =
-                new BufferedReader(new InputStreamReader(fetchURL.openStream()));
+                new BufferedReader(
+                   new InputStreamReader(fetchURL.openStream()));
             String inputLine;
 
             // compile regexp that looks for lines of form:
-            //       raceid='<raceid>' racedistance='<km>' maxriders='<maxriders>'
-            // e.g., raceid='18d1a1bcd104ee116a772310bbc61211' racedistance='40.0' maxriders='10' 
+            //   raceid='<raceid>' racedistance='<km>' maxriders='<maxriders>'
+            // e.g., raceid='18d1d104e...' racedistance='40.0' maxriders='10'
             Pattern regexp =
-                Pattern.compile("raceid='([0-9a-fA-F]+)'\\s+racedistance='([0-9.]+)'\\s+maxriders='([0-9.]+)'");
+                Pattern.compile("raceid='([0-9a-fA-F]+)'\\s+" +
+                                "racedistance='([0-9.]+)'\\s+" +
+                                "maxriders='([0-9.]+)'");
 
             // get read to allocate and jam races we find into currentRaces
             currentRaces.clear();
@@ -147,8 +152,9 @@ public class WebPoller extends Thread {
                 Matcher matcher = regexp.matcher(inputLine);
                 boolean matchfound = matcher.find();
                 if (!matchfound) {
-                    logger.warn("GoldenWeb contained badly formatted line.  URL: " +
-                                url_to_poll + "   line: " + inputLine);
+                    logger.warn("GoldenWeb contained a badly formatted " +
+                                "line.  URL: " + url_to_poll + "   line: " +
+                                inputLine);
                     continue;
                 }
                 String raceid = "";
@@ -159,16 +165,18 @@ public class WebPoller extends Thread {
                     racedistance_km = Float.parseFloat(matcher.group(2));
                     maxriders = Integer.parseInt(matcher.group(3));
                 } catch (NumberFormatException e) {
-                    logger.warn("GoldenWeb contained badly formatted line.  URL: " +
-                                url_to_poll + "   line: " + inputLine);
+                    logger.warn("GoldenWeb contained a badly formatted " +
+                                "line.  URL: " + url_to_poll + "   line: " +
+                                inputLine);
                     continue;
                 }
 
                 // add the new Race structure to our Race hashtable
                 Race newrace = new Race(raceid, racedistance_km, maxriders);
                 if (currentRaces.containsKey(raceid)) {
-                    logger.warn("GoldenWeb contained multiple lines with the " +
-                                "same raceid (" + raceid + ").  using last.");
+                    logger.warn("GoldenWeb contained multiple lines with " +
+                                "the same raceid (" + raceid +
+                                ").  using last.");
                 }
                 currentRaces.put(raceid, newrace);
             }

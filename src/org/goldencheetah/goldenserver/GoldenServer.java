@@ -1,6 +1,9 @@
 /* 
  * Copyright (c) 2006 Justin Knotzke (jknotzke@shampoo.ca)
  *
+ * Additional contributions from:
+ *     Steve Gribble    [ gribble {at} cs.washington.edu ]
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the Free
  * Software Foundation; either version 2 of the License, or (at your option)
@@ -16,56 +19,71 @@
  * Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-
 package org.goldencheetah.goldenserver;
 
+// standard java imports
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+// imports from .jar's in lib/
 import org.apache.log4j.Logger;
 
-public class GoldenServer extends Thread 
-{
-	static Logger logger = Logger.getLogger(GoldenServer.class.getName());
-	
-	private ServerSocket server;
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) 
-	{
-		   new GoldenServer();
+public class GoldenServer {
+    static Logger logger = Logger.getLogger(GoldenServer.class.getName());
 
+    /*
+     * run() creates a server socket, and spins waiting for a connection.
+     * For each connection that arrives, run() forks off a handler thread
+     * to handle it.
+     */
+    public void run(int portnum) {
+        ServerSocket server = null;
+        Socket clientSocket = null;
+
+        System.out.println("Starting up the GoldenServer (on port " + portnum + ")...");
+        try {
+            server = new ServerSocket(portnum);
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            System.exit(1);
+        }
+
+        while (true) {
+            try {
+                logger.debug("waiting for a connection.");
+                clientSocket = server.accept();
+                logger.debug("got a connection!");
+                RaceDispatcher raceDispatch = new RaceDispatcher(clientSocket);
+                raceDispatch.start();
+            } catch (IOException ioe) {
+                logger.error(ioe);
+            }
 	}
+    }
 
-	public GoldenServer() {
-		try {
-			System.out.println("Starting Server..");
-			server = new ServerSocket(6666);
-			this.start();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
+    public static void usage() {
+        System.out.println("usage: java org.goldencheetah.goldenserver.GoldenServer [port]");
+        System.exit(-1);
+    }
 
-	@Override
-	public void run() 
-	{
-		Socket clientSocket = null;
-		while (true) 
-		{
-			try {
-				logger.debug("Waiting for a connection..");
-				clientSocket = server.accept();
-				logger.debug("Got a connection!..");
-				RaceDispatcher raceDispatch = new RaceDispatcher(clientSocket);
-				raceDispatch.start();
-			} catch (IOException e) {
-			    logger.error(e);
-			}
-		}
-	}
+    public static void main(String[] args) {
+        int portnum = 9133;  // default port is 9133
+
+        // If an argument is passed in, interpret it as a port number.
+        // If not, we keep the default port of 9133.
+        if (args.length == 1) {
+            try {
+                portnum = Integer.parseInt(args[0]);
+            } catch (NumberFormatException e) {
+                usage();
+            }
+            if ((portnum < 1) || (portnum > 65535)) {
+                usage();
+            }
+        }
+        GoldenServer gs = new GoldenServer();
+        gs.run(portnum);
+    }
 }

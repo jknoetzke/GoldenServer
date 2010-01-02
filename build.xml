@@ -1,0 +1,59 @@
+<project name="GoldenServer" basedir="." default="main">
+
+  <!-- the main directories in project repository -->
+  <property name="src.dir"     value="src"/>
+  <property name="lib.dir"     value="lib"/>
+
+  <!-- dynamically generated directories, not in project repository -->
+  <property name="build.dir"   value="build"/>
+  <property name="classes.dir" value="${build.dir}/classes"/>
+  <property name="jar.dir"     value="${build.dir}/jar"/>
+
+  <!-- add lib to the classpath -->
+  <path id="classpath">
+    <fileset dir="${lib.dir}" includes="**/*.jar"/>
+  </path>
+
+  <!-- this is the class file that is run by "ant run" -->
+  <property name="main-class"  value="org.goldencheetah.goldenserver.GoldenServer"/>
+
+  <!-- delete all dynamically generated files, i.e., stuff not in git repo -->
+  <target name="clean">
+    <delete dir="${build.dir}"/>
+  </target>
+
+  <!-- compile .class files from the .java source files -->
+  <!-- also, copy non-.java files (specifically log4j.properties) into the class dir -->
+  <target name="compile">
+    <mkdir dir="${classes.dir}"/>
+    <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath"/>
+    <copy todir="${classes.dir}">
+      <fileset dir="${src.dir}" excludes="**/*.java"/>
+    </copy>
+  </target>
+
+  <!-- create a .jar file containing all of the class dir files -->
+  <target name="jar" depends="compile">
+    <mkdir dir="${jar.dir}"/>
+    <jar destfile="${jar.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+      <manifest>
+        <attribute name="Main-Class" value="${main-class}"/>
+      </manifest>
+    </jar>
+  </target>
+
+  <!-- execute the application, part of which is in our jar and part in lib's jars -->
+  <target name="run" depends="jar">
+    <java fork="true" classname="${main-class}">
+      <classpath>
+        <path refid="classpath"/>
+        <path location="${jar.dir}/${ant.project.name}.jar"/>
+      </classpath>
+    </java>
+  </target>
+
+  <target name="clean-build" depends="clean,jar"/>
+
+  <target name="main" depends="clean,run"/>
+
+</project>

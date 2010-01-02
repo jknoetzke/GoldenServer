@@ -13,7 +13,7 @@ public class GoldenServerMessage
 		for(int i=0; i < handlers.size(); i++)
 		{
 			Race race = handlers.elementAt(i);
-			race.get
+			// race.get
 		}
 		
 	}
@@ -28,7 +28,7 @@ public class GoldenServerMessage
 		StringBuffer clientList = new StringBuffer();
 		for(int x=0; x< handlers.size(); x++)
 		{
-			clientList.append(handlers.get(x).getRace().get
+                    // clientList.append(handlers.get(x).getRace().get
 		    if(x < (handlers.size() -1))
 		    	clientList.append(",");
 		}

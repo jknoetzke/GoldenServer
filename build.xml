@@ -1,13 +1,17 @@
 <project name="GoldenServer" basedir="." default="main">
 
   <!-- the main directories in project repository -->
-  <property name="src.dir"     value="src"/>
-  <property name="lib.dir"     value="lib"/>
+  <property name="src.dir"      value="src"/>
+  <property name="lib.dir"      value="lib"/>
 
   <!-- dynamically generated directories, not in project repository -->
-  <property name="build.dir"   value="build"/>
-  <property name="classes.dir" value="${build.dir}/classes"/>
-  <property name="jar.dir"     value="${build.dir}/jar"/>
+  <property name="build.dir"    value="build"/>
+  <property name="classes.dir"  value="${build.dir}/classes"/>
+  <property name="jar.dir"      value="${build.dir}/jar"/>
+
+  <!-- default arguments passed to GoldenServer on execution -->
+  <property name="port" value="9133"/>
+  <property name="gweb_url"     value="http://www.cs.washington.edu/homes/gribble/tmp/gs.txt"/>
 
   <!-- add lib to the classpath -->
   <path id="classpath">
@@ -49,6 +53,8 @@
         <path refid="classpath"/>
         <path location="${jar.dir}/${ant.project.name}.jar"/>
       </classpath>
+      <arg value="${port}"/>
+      <arg value="${gweb_url}"/>
     </java>
   </target>
 

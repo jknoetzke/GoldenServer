@@ -26,19 +26,39 @@ haven't installed ant yet, please do so now.
 
 To compile the server, run:
 
-   ant clean-build
+  ant clean-build
 
 To compile and execute the server, run:
 
-   ant
+  ant
 
 To clean dynamically generated files, run:
 
-   ant clean
+  ant clean
 
 We strongly suggest running "ant clean" before doing any
 git-related stuff, so that you don't accidentally check in
 any non-source files.
+
+
+CUSTOMIZING THE LISTEN PORT AND GOLDENWEB URL
+
+GoldenServer listens for incoming client connections on a
+TCP port.  By default, this port is 9133.  If you'd like
+to use a different port, run ant with the optional
+"-Dport=xxxx" argument.
+
+GoldenServer polls a Web page to learn about newly defined
+races.  By default, the URL it polls is:
+
+  http://www.cs.washington.edu/homes/gribble/tmp/gs.txt
+
+To use a different URL, run ant with the optional
+"-Dgweb_url=xxxxxx" argument.
+
+For example, you could run ant with:
+
+  ant -Dport=6666 -Dgweb_url="http://foo.com/bz.txt"
 
 
 PROTOCOL DOCUMENTATION

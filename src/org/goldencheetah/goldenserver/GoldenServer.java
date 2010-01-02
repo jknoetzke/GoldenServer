@@ -38,11 +38,10 @@ public class GoldenServer {
      * For each connection that arrives, run() forks off a handler thread
      * to handle it.
      */
-    public void run(int portnum) {
+    public void run(int portnum, String gs_url) {
         ServerSocket server = null;
         Socket clientSocket = null;
 
-        System.out.println("Starting up the GoldenServer (on port " + portnum + ")...");
         try {
             server = new ServerSocket(portnum);
         } catch (IOException ioe) {
@@ -64,26 +63,32 @@ public class GoldenServer {
     }
 
     public static void usage() {
-        System.out.println("usage: java org.goldencheetah.goldenserver.GoldenServer [port]");
+        System.out.println("usage: java org.goldencheetah.goldenserver.GoldenServer " +
+                           "<port> <goldenweb_url>");
         System.exit(-1);
     }
 
     public static void main(String[] args) {
-        int portnum = 9133;  // default port is 9133
+        int    portnum = 0;
+        String gs_url = "";
 
-        // If an argument is passed in, interpret it as a port number.
-        // If not, we keep the default port of 9133.
-        if (args.length == 1) {
-            try {
-                portnum = Integer.parseInt(args[0]);
-            } catch (NumberFormatException e) {
-                usage();
-            }
-            if ((portnum < 1) || (portnum > 65535)) {
-                usage();
-            }
+        // pull in arguments
+        if (args.length != 2) {
+            usage();
         }
+        try {
+            portnum = Integer.parseInt(args[0]);
+        } catch (NumberFormatException e) {
+            usage();
+        }
+        if ((portnum < 1) || (portnum > 65535)) {
+            usage();
+        }
+        gs_url = args[1];
+
+        System.out.println("Starting GoldenServer; port is:  " + portnum);
+        System.out.println("The GoldenWeb polling URL is:    " + gs_url);
         GoldenServer gs = new GoldenServer();
-        gs.run(portnum);
+        gs.run(portnum, gs_url);
     }
 }

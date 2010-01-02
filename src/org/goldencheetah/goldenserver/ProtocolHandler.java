@@ -91,7 +91,7 @@ public class ProtocolHandler {
     public static class HelloMessage extends ProtocolMessage {
         // the regexp we use to parse out the message; precompile for speed.
         private static Pattern regexp =
-            // e.g., hello 0.1 raceid='18d1a1bcd104ee116a772310bbc61211' ridername='Steve G' ftp='213' weight='78.8'
+            // e.g., hello 0.1 raceid='18d1a1bcd104ee116a772310bbc61211' ridername='Steve G' ftp='213' weight='75.8'
             Pattern.compile("hello\\s+(\\d+\\.\\d+)\\s+raceid='([0-9a-fA-F]+)'\\s+ridername='([a-zA-Z ]+)'\\s+ftp='([0-9]+)'\\s+weight='([0-9.]+)'");
 
         public HelloMessage(String line) throws java.text.ParseException {
@@ -276,7 +276,7 @@ public class ProtocolHandler {
     public static class ClientMessage extends ProtocolMessage {
         // the regexp we use to parse out the message; precompile for speed.
         private static Pattern regexp =
-            // e.g., client ridername='Steve G' riderid='123212321232123a' ftp='213' weight='78.8'
+            // e.g., client ridername='Steve G' riderid='123212321232123a' ftp='213' weight='75.8'
             Pattern.compile("client\\s+ridername='([a-zA-Z ]+)'\\s+riderid='([0-9a-fA-F]+)'\\s+ftp='([0-9]+)'\\s+weight='([0-9.]+)'");
 
         public ClientMessage(String line) throws java.text.ParseException {
@@ -695,7 +695,7 @@ public class ProtocolHandler {
 
         // test ClientMessage
         pm = ProtocolHandler.parseLine(
-           "client ridername='Steve G' riderid='123212321232123a' ftp='213' weight='78.8'"
+           "client ridername='Steve G' riderid='123212321232123a' ftp='213' weight='75.8'"
                                        );
         if ((pm == null) || !(pm instanceof ProtocolHandler.ClientMessage)) {
             System.out.println("Parsing of client failed!?!\n");

@@ -38,11 +38,11 @@ public class RaceDispatcher extends Thread
 				
 				for(int i=0; i<races.size(); i++)
 				{
-					Race race = races.elementAt(i);
-					if(race.equals(raceID))
-					{
-						race.addRacer(Rider.createRider());
-					}
+                                    //Race race = races.elementAt(i);
+                                    //if(race.equals(raceID))
+                                    //	{
+                                            // race.addRacer(Rider.createRider());
+                                    //	}
 				}
 				    
 		     }
@@ -57,11 +57,11 @@ public class RaceDispatcher extends Thread
 	{
 		races = new Vector<Race>();
 		//Fake two races to start.
-		Race race1 = new Race();
-		races.add(race1);
+		//Race race1 = new Race();
+		//races.add(race1);
 		
-		Race race2 = new Race();
-		races.add(race2);
+		//Race race2 = new Race();
+		//races.add(race2);
 		
 		
 		try {

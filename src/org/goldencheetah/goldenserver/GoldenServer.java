@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) 2006 Justin Knotzke (jknotzke@shampoo.ca)
+ * Copyright (c) 2009 Justin Knotzke (jknotzke@shampoo.ca)
  *
  * Additional contributions from:
  *     Steve Gribble    [ gribble {at} cs.washington.edu ]
@@ -31,19 +31,23 @@ import org.apache.log4j.Logger;
 
 
 public class GoldenServer {
-    static Logger logger = Logger.getLogger(GoldenServer.class.getName());
+    private static Logger logger =
+        Logger.getLogger(GoldenServer.class.getName());
 
     /*
      * run() creates a server socket, and spins waiting for a connection.
      * For each connection that arrives, run() forks off a handler thread
-     * to handle it.
+     * to handle it.  run() also forks off a WebPoller thread.
      */
     public void run(int portnum, String gs_url) {
         ServerSocket server = null;
         Socket clientSocket = null;
+        WebPoller poller = null;
 
         try {
             server = new ServerSocket(portnum);
+            poller = new WebPoller(gs_url);
+            poller.start();
         } catch (IOException ioe) {
             ioe.printStackTrace();
             System.exit(1);

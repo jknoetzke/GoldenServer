@@ -22,7 +22,6 @@
   <property name="main-class"  value="org.goldencheetah.goldenserver.GoldenServer"/>
 
 
-
   <!-- delete all dynamically generated files, i.e., stuff not in git repo -->
   <target name="clean">
     <delete dir="${build.dir}"/>

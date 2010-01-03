@@ -158,7 +158,7 @@ GC/GS protocol
     such as assuming that the client is not making forward progress.]
 
     C->S:
-      telemetry raceid='<raceid>' riderid='<riderid>' power='<watts>' cadence='<rpm>' heartrate='<bpm>' speed='<kph>'\n
+      telemetry raceid='<raceid>' riderid='<riderid>' power='<watts>' cadence='<rpm>' distance='<km>' heartrate='<bpm>' speed='<kph>'\n
 
     From time to time, the server will inform each client of the
     current race standings.

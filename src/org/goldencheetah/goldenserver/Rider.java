@@ -31,12 +31,12 @@ import java.util.*;
  * participating in a race.
  */
 public class Rider {
-    private String          ridername;
-    private String          riderid;
-    private int             ftp_watts;
-    private float           weight_kg;
-    private BufferedReader  in;
-    private PrintWriter     out;
+    private String                      ridername;
+    private String                      riderid;
+    private int                         ftp_watts;
+    private float                       weight_kg;
+    private BufferedReader              in;
+    private ClientHandler.ClientWriter  writer;
 
     public static String getRandomRiderid() {
         Random generator = new Random();
@@ -45,13 +45,13 @@ public class Rider {
 
     public Rider(String ridername, int ftp_watts,
                  float weight_kg,
-                 BufferedReader in, PrintWriter out) {
+                 BufferedReader in, ClientHandler.ClientWriter writer) {
         this.ridername = ridername;
         this.riderid = getRandomRiderid();
         this.ftp_watts = ftp_watts;
         this.weight_kg = weight_kg;
         this.in = in;
-        this.out = out;
+        this.writer = writer;
     }
 	
     public String getRidername() {
@@ -85,8 +85,8 @@ public class Rider {
     public BufferedReader getIn() {
         return in;
     }
-    public PrintWriter getOut() {
-        return out;
+    public ClientHandler.ClientWriter getWriter() {
+        return writer;
     }
 
     public String toString() {

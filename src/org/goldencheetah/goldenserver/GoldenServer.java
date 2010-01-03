@@ -34,6 +34,7 @@ import org.apache.log4j.Logger;
 public class GoldenServer {
     private static Logger logger =
         Logger.getLogger(GoldenServer.class.getName());
+    public static String protoversion = "0.1";
 
     /*
      * run() creates a server socket, and spins waiting for a connection.
@@ -61,7 +62,7 @@ public class GoldenServer {
                 logger.debug("waiting for a connection.");
                 clientSocket = server.accept();
                 logger.debug("got a connection!");
-                ClientHandler ch = new ClientHandler(clientSocket);
+                ClientHandler ch = new ClientHandler(clientSocket, poller);
                 ch.start();
                 logger.debug("number of active client threads: " +
                              (Thread.activeCount() - 2));

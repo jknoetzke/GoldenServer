@@ -43,6 +43,17 @@ public class Race {
         this.racedistance_km = racedistance_km;
         this.maxriders = maxriders;
     }
-   
+
+    public String getRaceid() {
+        return raceid;
+    }
+
+    public float getRacedistanceKm() {
+        return racedistance_km;
+    }
+
+    public int getMaxriders() {
+        return maxriders;
+    }
 }
 

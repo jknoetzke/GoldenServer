@@ -28,13 +28,18 @@ import java.util.*;
 
 public class ClientHandler extends Thread {
     static Logger logger = Logger.getLogger(ClientHandler.class.getName());
+    static Hashtable<String,Race> activeRaces = new Hashtable<String,Race>();
 
-    private BufferedReader in;
-    private PrintWriter out;
-    private Socket clientsock;
+    private BufferedReader in = null;
+    private PrintWriter out = null;
+    private Socket clientsock = null;
+    private Rider rider = null;
+    private Race race = null;
+    private WebPoller poller = null;
 
-    public ClientHandler(Socket clientsock) {
+    public ClientHandler(Socket clientsock, WebPoller poller) {
         this.clientsock = clientsock;
+        this.poller = poller;
     }
 
     public void run() {
@@ -50,29 +55,48 @@ public class ClientHandler extends Thread {
             closeSock(clientsock);
             return;
         }
-        // XXX handle first line here
+        rider = new Rider(hm.ridername, hm.ftp_watts, hm.weight_kg,
+                               in, out);
+        
+        // find the Race this rider wants
+        race = findRace(hm.raceid);
+        if (race == null) {
+            // no such race!
+            noSuchRace(hm.raceid);
+            closeSock(clientsock);
+            return;
+        } else {
+            // ack the race to the client, move on to loop
+            ackRace();
+        }
 
         // loop ad infinitum, pulling in the next client message.
         boolean done = false;
         while(!done) {
-            String nextline = null;
-
-            try {
-                nextline = in.readLine();
-                if (nextline == null) {
-                    logger.debug("client connection dropped");
-                    done = true;
-                    continue;
-                }
-            } catch (IOException ioe) {
-                logger.debug("client connection dropped");
+            ProtocolHandler.ProtocolMessage pm = getNextMessage();
+            if (pm == null) {
                 done = true;
                 continue;
+            }
+
+            // handle the next message here.
+            if (pm instanceof ProtocolHandler.TelemetryMessage) {
+                done = handleTelemetry((ProtocolHandler.TelemetryMessage) pm);
+            } else if (pm instanceof ProtocolHandler.GoodbyeMessage) {
+                done = handleGoodbye((ProtocolHandler.GoodbyeMessage) pm);
+            } else {
+                // unexpected message!
+                logger.warn("unexpected message from client: '" +
+                            pm.toString() + "'");
+                done = true;
             }
         }
 
         // done with this client...
-        // XXX do stuff here
+
+        // XXX do stuff here, like potentially garbage collecting
+        // the race if no clients are left in it, and informing other
+        // clients of the membership change.
         closeSock(clientsock);
         return;
     }
@@ -105,27 +129,101 @@ public class ClientHandler extends Thread {
         return true;
     }
 
-    // a convenience routine to handle the first line
-    private ProtocolHandler.HelloMessage handleFirstLine() {
+    // a convenience routine to grab the next line from input, return
+    // a ProtocolHandler.ProtocolMessage.  returns null on error.
+    private ProtocolHandler.ProtocolMessage getNextMessage() {
         ProtocolHandler.ProtocolMessage pm = null;
-        String firstline = null;
+        String nextline = null;
 
         try {
-            firstline = in.readLine();
-            if (firstline == null) {
-                logger.debug("client connection dropped reading first line");
+            nextline = in.readLine();
+            if (nextline == null) {
+                logger.debug("client connection dropped...");
                 return null;
             }
-            pm = ProtocolHandler.parseLine(firstline);
+            pm = ProtocolHandler.parseLine(nextline);
+            if (pm == null) {
+                logger.warn("bogus line from client: '" + nextline + "'");
+                return null;
+            }
         } catch (IOException ioe) {
-            logger.debug("client connection dropped reading first line");
+            logger.debug("client connection dropped...");
             return null;
         }
-        if ((pm == null) || !(pm instanceof ProtocolHandler.HelloMessage)) {
-            logger.warn("bogus first line from client: '" + firstline + "'");
+        return pm;
+    }
+
+    // a convenience routine to handle the first line
+    private ProtocolHandler.HelloMessage handleFirstLine() {
+        ProtocolHandler.ProtocolMessage pm = getNextMessage();
+
+        if (pm == null) return null;
+        if (!(pm instanceof ProtocolHandler.HelloMessage)) {
+            logger.warn("expected HelloMesssage, but got something else");
             return null;
         }
         ProtocolHandler.HelloMessage hm = (ProtocolHandler.HelloMessage) pm;
         return hm;
+    }
+
+    // convenience routine to find the right Race, or create it if not
+    // already created.
+    private Race findRace(String raceid) {
+        Race ret_race = activeRaces.get(raceid);
+        if (ret_race == null) {
+            // didn't find it.  enter critical section to try again,
+            // and if fail, create race.
+            synchronized(activeRaces) {
+                ret_race = activeRaces.get(raceid);
+                if (ret_race == null) {
+                    ret_race = poller.findNewRace(raceid);
+                }
+                if (ret_race != null) {
+                    activeRaces.put(raceid, ret_race);
+                }
+            }
+        }
+        return ret_race;
+    }
+
+    // convenience routine to tell client that no such race exists.
+    private void noSuchRace(String raceid) {
+        ProtocolHandler.HelloFailMessage hfm =
+            new ProtocolHandler.HelloFailMessage(
+                GoldenServer.protoversion,
+                "nosuchrace",
+                raceid);
+        out.print(hfm.toString());
+        out.flush();
+        logger.debug("client asked for race that doesn't exist ('" +
+                     raceid + "')");
+    }
+
+    // convenience routine to ack the race to the rider.
+    private void ackRace() {
+        ProtocolHandler.HelloSucceedMessage hsm =
+            new ProtocolHandler.HelloSucceedMessage(
+                GoldenServer.protoversion,
+                race.getRaceid(),
+                rider.getRiderid(),
+                race.getRacedistanceKm());
+        out.print(hsm.toString());
+        out.flush();
+        logger.debug("sent HelloSucceedMessage");
+    }
+
+    // convenience routine to handle a TelemetryMessage.
+    private boolean handleTelemetry(ProtocolHandler.TelemetryMessage tm) {
+        boolean done = false;
+        logger.debug("telemetry message from client...");
+        // XXX -- handle telemetry here
+        return done;
+    }
+
+    // convenience routine to handle a GoodbyeMessage.
+    private boolean handleGoodbye(ProtocolHandler.GoodbyeMessage gm) {
+        boolean done = true;
+        logger.debug("got valid goodbye, client disconnecting...");
+        return done;
     }
 }

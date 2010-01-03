@@ -43,9 +43,9 @@ public class Rider {
         return (Long.toHexString(generator.nextLong())).toLowerCase();
     }
 
-    private Rider(String ridername, int ftp_watts,
-                  float weight_kg,
-                  BufferedReader in, PrintWriter out) {
+    public Rider(String ridername, int ftp_watts,
+                 float weight_kg,
+                 BufferedReader in, PrintWriter out) {
         this.ridername = ridername;
         this.riderid = getRandomRiderid();
         this.ftp_watts = ftp_watts;

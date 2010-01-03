@@ -39,42 +39,18 @@ public class ClientHandler extends Thread {
 
     public void run() {
         // set up the reader/writer
-        try {
-            this.in =
-                new BufferedReader(
-                    new InputStreamReader(
-                        clientsock.getInputStream()));
-            this.out =
-                new PrintWriter(
-                    new OutputStreamWriter(
-                        clientsock.getOutputStream()));
-        } catch (IOException ioe) {
-            logger.debug("client connection dropped creating in/out");
+        if (!setupReaderWriter()) {
             closeSock(clientsock);
             return;
         }
 
         // read the first line, unmarshal it
-        ProtocolHandler.ProtocolMessage pm = null;
-        String firstline = null;
-        try {
-            firstline = in.readLine();
-            if (firstline == null) {
-                logger.debug("client connection dropped reading first line");
-            } else {
-                pm = ProtocolHandler.parseLine(firstline);
-            }
-        } catch (IOException ioe) {
-            logger.debug("client connection dropped reading first line");
+        ProtocolHandler.HelloMessage hm = handleFirstLine();
+        if (hm == null) {
             closeSock(clientsock);
             return;
         }
-        if ((pm == null) || !(pm instanceof ProtocolHandler.HelloMessage)) {
-            logger.warn("bogus first line from client: '" + firstline + "'");
-            closeSock(clientsock);
-            return;
-        }
-        ProtocolHandler.HelloMessage hm = (ProtocolHandler.HelloMessage) pm;
+        // XXX handle first line here
 
         // loop ad infinitum, pulling in the next client message.
         boolean done = false;
@@ -109,5 +85,47 @@ public class ClientHandler extends Thread {
             } catch (IOException ioe) {
             }
         }
+    }
+
+    // a convenience routine to set up reader/writers
+    private boolean setupReaderWriter() {
+        try {
+            this.in =
+                new BufferedReader(
+                    new InputStreamReader(
+                        clientsock.getInputStream()));
+            this.out =
+                new PrintWriter(
+                    new OutputStreamWriter(
+                        clientsock.getOutputStream()));
+        } catch (IOException ioe) {
+            logger.debug("client connection dropped creating in/out");
+            return false;
+        }
+        return true;
+    }
+
+    // a convenience routine to handle the first line
+    private ProtocolHandler.HelloMessage handleFirstLine() {
+        ProtocolHandler.ProtocolMessage pm = null;
+        String firstline = null;
+
+        try {
+            firstline = in.readLine();
+            if (firstline == null) {
+                logger.debug("client connection dropped reading first line");
+                return null;
+            }
+            pm = ProtocolHandler.parseLine(firstline);
+        } catch (IOException ioe) {
+            logger.debug("client connection dropped reading first line");
+            return null;
+        }
+        if ((pm == null) || !(pm instanceof ProtocolHandler.HelloMessage)) {
+            logger.warn("bogus first line from client: '" + firstline + "'");
+            return null;
+        }
+        ProtocolHandler.HelloMessage hm = (ProtocolHandler.HelloMessage) pm;
+        return hm;
     }
 }

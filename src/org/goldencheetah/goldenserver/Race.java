@@ -34,37 +34,54 @@ public class Race {
     static Logger logger = Logger.getLogger(Race.class.getName());
     private static final int          TELEMETRY_BROADCAST_PERIOD_MS = 1000;
 
-    private String                    raceid;
-    private float                     racedistance_km;
-    private int                       maxriders;
-    private Hashtable<Rider,Position> riders;
-    private long                      last_telemetry_broadcast;
+    private String                     raceid;
+    private float                      racedistance_km;
+    private int                        maxriders;
+    private long                       last_telemetry_broadcast;
+    private List<Position>             standings;
+    private Hashtable<String,Position> riderid_position_index;
 
     public Race(String raceid, float racedistance_km, int maxriders) {
         this.raceid = raceid;
         this.racedistance_km = racedistance_km;
         this.maxriders = maxriders;
-        this.riders = new Hashtable<Rider,Position>();
         this.last_telemetry_broadcast = System.currentTimeMillis();
+        this.standings =
+            Collections.synchronizedList(new LinkedList<Position>());
+        this.riderid_position_index = new Hashtable<String,Position>();
     }
 
     // used to track each rider's position and last telemetry update
-    private class Position {
+    private class Position implements Comparable<Position>{
         public float                            raceposition_km;
         public ProtocolHandler.TelemetryMessage last_telemetry_update;
         public long                             last_update_time;
+        public Rider                            rider;
 
-        Position() {
+        Position(String raceid, Rider rider) {
             raceposition_km = (float) 0.0;
+            last_telemetry_update =
+                new ProtocolHandler.TelemetryMessage(raceid,
+                                                     rider.getRiderid(),
+                                                     0, 0, (float) 0.0,
+                                                     0, (float) 0.0);
             last_update_time = System.currentTimeMillis();
+            this.rider = rider;
+        }
+
+        public int compareTo(Position n) {
+            return -1 * Float.compare(raceposition_km, n.raceposition_km);
         }
     }
 
     public synchronized boolean addClient(Rider rider) {
         logger.debug("adding client; new size would be " +
-                     (riders.size() + 1));
-        if (riders.size() < maxriders) {
-            riders.put(rider, new Position());
+                     (riderid_position_index.size() + 1));
+        if (riderid_position_index.size() < maxriders) {
+            Position newp = new Position(raceid, rider);
+            riderid_position_index.put(rider.getRiderid(), newp);
+            standings.add(newp);
+            Collections.sort(standings);
             return true;
         }
         return false;
@@ -72,19 +89,19 @@ public class Race {
 
     public synchronized boolean telemetryUpdate(
            Rider rider, ProtocolHandler.TelemetryMessage tm) {
-        Position old_posn = (Position) riders.get(rider);
-        long     old_time = old_posn.last_update_time;
+        Position rider_posn = riderid_position_index.get(rider.getRiderid());
+        standings.remove(rider_posn);
+        long     old_time = rider_posn.last_update_time;
+        float    old_speed_kph = rider_posn.last_telemetry_update.speed_kph;
         long     new_time = System.currentTimeMillis();
 
-        if (old_posn == null) {
-            logger.error("couldn't find old telemetry in hashtable??!");
-            System.exit(-1);
-        }
-        old_posn.last_telemetry_update = tm;
-        old_posn.last_update_time = new_time;
-        old_posn.raceposition_km += (float) (
+        rider_posn.last_telemetry_update = tm;
+        rider_posn.last_update_time = new_time;
+        rider_posn.raceposition_km += (float) (
             (((float) (new_time - old_time))/1000.0) *
-            (tm.speed_kph / 3600.0));
+            (old_speed_kph / 3600.0));
+        standings.add(rider_posn);
+        Collections.sort(standings);
 
         if ((new_time - last_telemetry_broadcast) >
             TELEMETRY_BROADCAST_PERIOD_MS) {
@@ -96,17 +113,18 @@ public class Race {
 
     public synchronized void sendTelemetryUpdates() {
         // allocate space for the standings update messages
+        int numriders = riderid_position_index.size();
         ProtocolHandler.ProtocolMessage[] update =
-            new ProtocolHandler.ProtocolMessage[riders.size() + 1];
+            new ProtocolHandler.ProtocolMessage[numriders + 1];
 
         // build up the update messages
         update[0] = new ProtocolHandler.StandingsMessage(raceid,
-                                                         riders.size());
-        Enumeration it = riders.keys();
+                                                         numriders);
+        Iterator it = standings.iterator();
         int i = 1;
-        while (it.hasMoreElements()) {
-            Rider nextRider = (Rider) it.nextElement();
-            Position posn = (Position) riders.get(nextRider);
+        while (it.hasNext()) {
+            Position posn = (Position) it.next();
+            Rider nextRider = posn.rider;
             ProtocolHandler.TelemetryMessage tm = posn.last_telemetry_update;
 
             update[i] =
@@ -117,31 +135,33 @@ public class Race {
                                                  posn.raceposition_km,
                                                  tm.heartrate_bpm,
                                                  tm.speed_kph,
-                                                 1);  // XXX FIX POSITION
+                                                 i);  // XXX FIX POSITION
             i++;
         }
 
         // send out the update messages
-        it = riders.keys();
-        while (it.hasMoreElements()) {
-            Rider nextRider = (Rider) it.nextElement();
-            nextRider.getWriter().add(update);
+        it = standings.iterator();
+        while (it.hasNext()) {
+            Position posn = (Position) it.next();
+            posn.rider.getWriter().add(update);
         }
         return;
     }
 
     public synchronized void sendMembershipUpdate() {
         // allocate space for the membership update messages
+        int numriders = riderid_position_index.size();
         ProtocolHandler.ProtocolMessage[] update =
-            new ProtocolHandler.ProtocolMessage[riders.size() + 1];
+            new ProtocolHandler.ProtocolMessage[numriders + 1];
 
         // build up the update messages
         update[0] = new ProtocolHandler.ClientListMessage(raceid,
-                                                          riders.size());
-        Enumeration it = riders.keys();
+                                                          numriders);
+        Iterator it = standings.iterator();
         int i = 1;
-        while (it.hasMoreElements()) {
-            Rider nextRider = (Rider) it.nextElement();
+        while (it.hasNext()) {
+            Position posn = (Position) it.next();
+            Rider nextRider = posn.rider;
             update[i] =
                 new ProtocolHandler.ClientMessage(nextRider.getRidername(),
                                                   nextRider.getRiderid(),
@@ -151,19 +171,22 @@ public class Race {
         }
 
         // send out the update messages
-        it = riders.keys();
-        while (it.hasMoreElements()) {
-            Rider nextRider = (Rider) it.nextElement();
-            nextRider.getWriter().add(update);
+        it = standings.iterator();
+        while (it.hasNext()) {
+            Position posn = (Position) it.next();
+            posn.rider.getWriter().add(update);
         }
+        return;
     }
 
     public synchronized void dropClient(Rider rider) {
-        riders.remove(rider);
+        Position posn = riderid_position_index.get(rider.getRiderid());
+        standings.remove(posn);
+        riderid_position_index.remove(rider.getRiderid());
     }
 
     public synchronized int numClients() {
-        return riders.size();
+        return riderid_position_index.size();
     }
 
     public String getRaceid() {

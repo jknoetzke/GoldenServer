@@ -38,6 +38,8 @@ public class ClientHandler extends Thread {
     private Race race = null;
     private WebPoller poller = null;
     private ClientWriter writer = null;
+    private Object sync_concluded = new Object();
+    private boolean sent_concluded = false;
 
     public ClientHandler(Socket clientsock, WebPoller poller) {
         this.clientsock = clientsock;
@@ -67,6 +69,25 @@ public class ClientHandler extends Thread {
          */
         public void selfTerminate() {
             this.halt = true;
+        }
+
+        /*
+         * Spin until queue is zero, then return.  Added a couple of
+         * hack-ish delays; the first makes sure we don't
+         * unnecessarily burn the CPU, the second gives the writer a
+         * chance to flush the TCP socket before the caller closes it.
+         */
+        public void spinZero() {
+            while (queue.size() > 0) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ie) {
+                }
+            }
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ie) {
+            }
         }
 
         /*
@@ -290,6 +311,7 @@ public class ClientHandler extends Thread {
                 "nosuchrace",
                 raceid);
         writer.add(hfm);
+        writer.spinZero();
         logger.debug("client asked for race that doesn't exist ('" +
                      raceid + "')");
     }
@@ -308,8 +330,17 @@ public class ClientHandler extends Thread {
 
     // convenience routine to handle a TelemetryMessage.
     private boolean handleTelemetry(ProtocolHandler.TelemetryMessage tm) {
+        boolean done;
         logger.debug("telemetry message from client...");
-        return race.telemetryUpdate(rider, tm);
+        done = race.telemetryUpdate(rider, tm);
+        if (!done) return false;
+
+        synchronized(sync_concluded) {
+            if (!sent_concluded)
+                race.sendRaceConcluded();
+            sent_concluded = true;
+        }
+        return false;   // don't drop clients until they say goodbye
     }
 
     // convenience routine to handle a GoodbyeMessage.

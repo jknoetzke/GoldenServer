@@ -40,6 +40,7 @@ public class Race {
     private long                       last_telemetry_broadcast;
     private List<Position>             standings;
     private Hashtable<String,Position> riderid_position_index;
+    private boolean                    race_concluded;
 
     public Race(String raceid, float racedistance_km, int maxriders) {
         this.raceid = raceid;
@@ -49,6 +50,7 @@ public class Race {
         this.standings =
             Collections.synchronizedList(new LinkedList<Position>());
         this.riderid_position_index = new Hashtable<String,Position>();
+        this.race_concluded = false;
     }
 
     // used to track each rider's position and last telemetry update
@@ -75,6 +77,11 @@ public class Race {
         }
     }
 
+    // has this race finished?
+    public synchronized boolean isConcluded() {
+        return race_concluded;
+    }
+
     // add a new rider to the race, if there is room
     public synchronized boolean addClient(Rider rider) {
         logger.debug("adding client; new size would be " +
@@ -93,6 +100,8 @@ public class Race {
     // client's virtual position in the race, and if it's been more
     // than TELEMETRY_BROADCAST_PERIOD_MS since the last broadcast,
     // then broadcast new rider standings to all rider clients.
+    //
+    // returns true if the race has concluded, false otherwise.
     public synchronized boolean telemetryUpdate(
            Rider rider, ProtocolHandler.TelemetryMessage tm) {
         Position rider_posn = riderid_position_index.get(rider.getRiderid());
@@ -101,6 +110,8 @@ public class Race {
         float    old_speed_kph = rider_posn.last_telemetry_update.speed_kph;
         long     new_time = System.currentTimeMillis();
 
+        if (race_concluded) return true;
+
         rider_posn.last_telemetry_update = tm;
         rider_posn.last_update_time = new_time;
         rider_posn.raceposition_km += (float) (
@@ -108,6 +119,14 @@ public class Race {
             (old_speed_kph / 3600.0));
         standings.add(rider_posn);
         Collections.sort(standings);
+
+        // has the race been won?
+        if ((racedistance_km != 0) &&
+            (rider_posn.raceposition_km > racedistance_km)) {
+            // yes!
+            race_concluded = true;
+            return true;
+        }
 
         if ((new_time - last_telemetry_broadcast) >
             TELEMETRY_BROADCAST_PERIOD_MS) {
@@ -123,6 +142,9 @@ public class Race {
         int numriders = riderid_position_index.size();
         ProtocolHandler.ProtocolMessage[] update =
             new ProtocolHandler.ProtocolMessage[numriders + 1];
+
+        // if the race has concluded, ignore this telemetry push.
+        if (race_concluded) return;
 
         // build up the update messages
         update[0] = new ProtocolHandler.StandingsMessage(raceid,
@@ -155,12 +177,46 @@ public class Race {
         return;
     }
 
+    // broadcast the final race standings to all clients.
+    public synchronized void sendRaceConcluded() {
+        // allocate space for the standings update messages
+        int numriders = riderid_position_index.size();
+        ProtocolHandler.ProtocolMessage[] update =
+            new ProtocolHandler.ProtocolMessage[numriders + 1];
+
+        // build up the update messages
+        update[0] = new ProtocolHandler.RaceConcludedMessage(raceid,
+                                                             numriders);
+        Iterator it = standings.iterator();
+        int i = 1;
+        while (it.hasNext()) {
+            Position posn = (Position) it.next();
+            Rider nextRider = posn.rider;
+
+            update[i] =
+                new ProtocolHandler.ResultMessage(nextRider.getRiderid(),
+                                                  posn.raceposition_km,
+                                                  i);
+            i++;
+        }
+
+        // send out the update messages
+        it = standings.iterator();
+        while (it.hasNext()) {
+            Position posn = (Position) it.next();
+            posn.rider.getWriter().add(update);
+        }
+        return;
+    }
+
     // send out the current race membership to all connected clients.
     public synchronized void sendMembershipUpdate() {
         // allocate space for the membership update messages
         int numriders = riderid_position_index.size();
         ProtocolHandler.ProtocolMessage[] update =
             new ProtocolHandler.ProtocolMessage[numriders + 1];
+
+        if (race_concluded) return;
 
         // build up the update messages
         update[0] = new ProtocolHandler.ClientListMessage(raceid,

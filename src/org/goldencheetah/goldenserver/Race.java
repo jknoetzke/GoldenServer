@@ -70,10 +70,12 @@ public class Race {
         }
 
         public int compareTo(Position n) {
+            // -1 to sort descending instead of ascending
             return -1 * Float.compare(raceposition_km, n.raceposition_km);
         }
     }
 
+    // add a new rider to the race, if there is room
     public synchronized boolean addClient(Rider rider) {
         logger.debug("adding client; new size would be " +
                      (riderid_position_index.size() + 1));
@@ -87,6 +89,10 @@ public class Race {
         return false;
     }
 
+    // process a telemetry message from a client.  update that
+    // client's virtual position in the race, and if it's been more
+    // than TELEMETRY_BROADCAST_PERIOD_MS since the last broadcast,
+    // then broadcast new rider standings to all rider clients.
     public synchronized boolean telemetryUpdate(
            Rider rider, ProtocolHandler.TelemetryMessage tm) {
         Position rider_posn = riderid_position_index.get(rider.getRiderid());
@@ -111,6 +117,7 @@ public class Race {
         return false;
     }
 
+    // broadcast the current race standings to all clients.
     public synchronized void sendTelemetryUpdates() {
         // allocate space for the standings update messages
         int numriders = riderid_position_index.size();
@@ -135,7 +142,7 @@ public class Race {
                                                  posn.raceposition_km,
                                                  tm.heartrate_bpm,
                                                  tm.speed_kph,
-                                                 i);  // XXX FIX POSITION
+                                                 i);
             i++;
         }
 
@@ -148,6 +155,7 @@ public class Race {
         return;
     }
 
+    // send out the current race membership to all connected clients.
     public synchronized void sendMembershipUpdate() {
         // allocate space for the membership update messages
         int numriders = riderid_position_index.size();
@@ -179,6 +187,7 @@ public class Race {
         return;
     }
 
+    // remove a client from the race.
     public synchronized void dropClient(Rider rider) {
         Position posn = riderid_position_index.get(rider.getRiderid());
         standings.remove(posn);

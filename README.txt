@@ -71,3 +71,16 @@ Java marshaling/unmarshaling code is in:
 
 C++ marshaling/unmarshaling code is in the GoldenCheetah distribution,
 in the src/ProtocolHandler.cpp and src/ProtocolHandler.h.
+
+
+ROBOT RIDER
+
+For testing purposes (or to impress your friends!) we have included
+RobotRider, a softbot that connects to a GoldenServer and sends
+synthetic telemetry information.
+
+To run RobotRider, give the following command (substituting in the
+correct raceid, GoldenServer hostname, and GoldenServer port):
+
+  ant robot -Draceid="519ca13cda46441a01211cffb491cf3a" \
+   -Dhostname=foo.bar.com -Dport=9133

@@ -13,6 +13,10 @@
   <property name="port" value="9133"/>
   <property name="gweb_url"     value="http://www.cs.washington.edu/homes/gribble/tmp/gs.txt"/>
 
+  <!-- default arguments passed to RobotRider on execution -->
+  <property name="raceid" value="1"/>
+  <property name="hostname" value="localhost"/>
+
   <!-- add lib to the classpath -->
   <path id="classpath">
     <fileset dir="${lib.dir}" includes="**/*.jar"/>
@@ -20,6 +24,9 @@
 
   <!-- this is the class file that is run by "ant run" -->
   <property name="main-class"  value="org.goldencheetah.goldenserver.GoldenServer"/>
+
+  <!-- this is the class file that is run by "ant robot ..." -->
+  <property name ="robot-class"  value="org.goldencheetah.goldenserver.RobotRider"/>
 
 
   <!-- delete all dynamically generated files, i.e., stuff not in git repo -->
@@ -47,7 +54,7 @@
     </jar>
   </target>
 
-  <!-- execute the application, part of which is in our jar and part in lib's jars -->
+  <!-- execute the server, part of which is in our jar and part in lib's jars -->
   <target name="run" depends="jar">
     <java fork="true" classname="${main-class}">
       <classpath>
@@ -56,6 +63,19 @@
       </classpath>
       <arg value="${port}"/>
       <arg value="${gweb_url}"/>
+    </java>
+  </target>
+
+  <!-- execute RobotRider, same deal with jars as the server -->
+  <target name="robot" depends="jar">
+    <java fork="true" classname="${robot-class}">
+      <classpath>
+        <path refid="classpath"/>
+        <path location="${jar.dir}/${ant.project.name}.jar"/>
+      </classpath>
+      <arg value="${raceid}"/>
+      <arg value="${hostname}"/>
+      <arg value="${port}"/>
     </java>
   </target>
 

@@ -26,6 +26,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.nio.charset.Charset;
 
 public class ClientHandler extends Thread {
     static Logger logger = Logger.getLogger(ClientHandler.class.getName());
@@ -130,6 +131,10 @@ public class ClientHandler extends Thread {
                 } catch (java.lang.InterruptedException ie) {
                 }
             }
+            if (out != null) {
+                out.close();
+                out = null;
+            }
         }
     }
 
@@ -219,11 +224,19 @@ public class ClientHandler extends Thread {
 
     // a convenience routine to close a socket
     private void closeSock(Socket s) {
+        if (in != null) {
+            try {
+                in.close();
+            } catch (IOException ioe) {
+            }
+            in = null;
+        }
         if (s != null) {
             try {
                 s.close();
             } catch (IOException ioe) {
             }
+            s = null;
         }
         if (writer != null) {
             writer.selfTerminate();
@@ -232,15 +245,16 @@ public class ClientHandler extends Thread {
 
     // a convenience routine to set up reader/writers
     private boolean setupReaderWriter() {
+        Charset charset = Charset.forName("US-ASCII");
         try {
             this.in =
                 new BufferedReader(
                     new InputStreamReader(
-                        clientsock.getInputStream()));
+                        clientsock.getInputStream(), charset));
             this.out =
                 new PrintWriter(
                     new OutputStreamWriter(
-                        clientsock.getOutputStream()));
+                        clientsock.getOutputStream(), charset));
             this.writer = new ClientWriter(out);
             this.writer.start();
         } catch (IOException ioe) {

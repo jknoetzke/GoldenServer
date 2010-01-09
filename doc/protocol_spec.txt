@@ -91,7 +91,7 @@ GC/GS protocol
         <raceID> is the 128bit, hex raceID (see above)
 
         <ridername> is a nickname for the racer, containing only
-        alphabetic characters and the space character, e.g., Steve G
+        alphanumeric characters and the space character, e.g., Steve G
 
         <watts> is the functional threshold power of the client, in
         watts

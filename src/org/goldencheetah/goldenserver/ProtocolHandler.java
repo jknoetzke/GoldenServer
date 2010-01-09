@@ -96,7 +96,7 @@ public class ProtocolHandler {
         // the regexp we use to parse out the message; precompile for speed.
         private static Pattern regexp =
             // e.g., hello 0.1 raceid='18d1a1bcd104ee116a772310bbc61211' ridername='Steve G' ftp='213' weight='75.8'
-            Pattern.compile("hello\\s+(\\d+\\.\\d+)\\s+raceid='([0-9a-fA-F]+)'\\s+ridername='([a-zA-Z ]+)'\\s+ftp='([0-9]+)'\\s+weight='([0-9.]+)'");
+            Pattern.compile("hello\\s+(\\d+\\.\\d+)\\s+raceid='([0-9a-fA-F]+)'\\s+ridername='([a-zA-Z0-9 ]+)'\\s+ftp='([0-9]+)'\\s+weight='([0-9.]+)'");
 
         public HelloMessage(String line) throws java.text.ParseException {
             // parse the line here, using regexp
@@ -281,7 +281,7 @@ public class ProtocolHandler {
         // the regexp we use to parse out the message; precompile for speed.
         private static Pattern regexp =
             // e.g., client ridername='Steve G' riderid='123212321232123a' ftp='213' weight='75.8'
-            Pattern.compile("client\\s+ridername='([a-zA-Z ]+)'\\s+riderid='([0-9a-fA-F]+)'\\s+ftp='([0-9]+)'\\s+weight='([0-9.]+)'");
+            Pattern.compile("client\\s+ridername='([a-zA-Z0-9 ]+)'\\s+riderid='([0-9a-fA-F]+)'\\s+ftp='([0-9]+)'\\s+weight='([0-9.]+)'");
 
         public ClientMessage(String line) throws java.text.ParseException {
             // parse the line here, using regexp
